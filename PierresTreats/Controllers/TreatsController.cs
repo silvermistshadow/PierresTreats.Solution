@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System;
 
 namespace PierresTreats.Controllers
 {
@@ -23,13 +25,16 @@ namespace PierresTreats.Controllers
         {
             string userId = this.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             ApplicationUser currentUser = await _userManager.FindByIdAsync(userId);
-            return View();
+            List<Treat> model = _db.Treats.ToList();
+            return View(model);
         }
+
         public ActionResult Create()
         {
-            ViewBag.AuthorId = new SelectList(_db.Flavors, "FlavorId", "Name");
+            ViewBag.FlavorId = new SelectList(_db.Flavors, "FlavorId", "Name");
             return View();
         }
+
         [HttpPost]
         public ActionResult Create(Treat treat, int FlavorId)
         {
@@ -50,14 +55,14 @@ namespace PierresTreats.Controllers
                 .FirstOrDefault(treat => treat.TreatId == id);
             return View(thisTreat);
         }
-        public async Task<ActionResult> Edit(int id)
+
+        public ActionResult Edit(int id)
         {
-            string userId = this.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            ApplicationUser currentUser = await _userManager.FindByIdAsync(userId);
             Treat thisTreat = _db.Treats.FirstOrDefault(treat => treat.TreatId == id);
             ViewBag.FlavorId = new SelectList(_db.Flavors, "FlavorId", "Name");
             return View(thisTreat);
         }
+
         [HttpPost]
         public ActionResult Edit(Treat treat, int FlavorId)
         {
@@ -69,7 +74,24 @@ namespace PierresTreats.Controllers
             _db.SaveChanges();
             return RedirectToAction("Index");
         }
+        
+        public ActionResult AddFlavor(int id)
+        {
+            Treat thisTreat = _db.Treats.FirstOrDefault(treat => treat.TreatId == id);
+            ViewBag.FlavorId = new SelectList(_db.Flavors, "FlavorId", "Name");
+            return View(thisTreat);
+        }
 
+        [HttpPost]
+        public ActionResult AddFlavor(Treat treat, int FlavorId)
+        {
+            if (FlavorId != 0)
+            {
+                _db.FlavorTreat.Add(new FlavorTreat() { FlavorId = FlavorId, TreatId = treat.TreatId});
+            }
+            _db.SaveChanges();
+            return RedirectToAction("Index");
+        }
         public ActionResult Delete(int id)
         {
             var thisTreat = _db.Treats.FirstOrDefault(treats => treats.TreatId == id);
@@ -94,9 +116,5 @@ namespace PierresTreats.Controllers
             return RedirectToAction("Index");
         }
         
-        public ActionResult Overdue()
-        {
-            return View();
-        }
     }
 }
